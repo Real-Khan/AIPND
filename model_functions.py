@@ -16,7 +16,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 def custom_built_model(learning_rate):
     # Build and train the neural network (Transfer Learning)
     model = models.vgg16(pretrained=True)
-        
+
     print(model)
 
     # Freeze pretrained model parameters to avoid backpropogating through them
@@ -38,15 +38,15 @@ def custom_built_model(learning_rate):
 
     # Gradient descent optimizer
     optimizer = optim.Adam(model.classifier.parameters(), lr=learning_rate)
-    
+
     return model, criterion, optimizer, dropout
 
 # Function for the validation pass
 def validation(model, validateloader, criterion):
-    
+
     val_loss = 0
     accuracy = 0
-    
+
     for ii, (images, labels) in enumerate(validateloader):
 
         images, labels = images.to('cuda'), labels.to('cuda')
@@ -55,10 +55,10 @@ def validation(model, validateloader, criterion):
         val_loss = criterion(output, labels)
 
         probabilities = torch.exp(output)
-        
+
         equality = (labels.data == probabilities.max(dim=1)[1])
         accuracy += equality.type(torch.FloatTensor).mean()
-    
+
     return val_loss, accuracy
 
 #Early stopping function
@@ -76,7 +76,7 @@ class EarlyStopping():
             if self.counter >= self.tolerance:  
                 self.early_stop = True
 early_stopping = EarlyStopping(tolerance=2, min_delta=5)
-    
+
 #Main function to train model
 def train_model(model, initial_epochs, criterion, optimizer, train_loader, validate_loader, device=device):
     with active_session():
@@ -108,21 +108,21 @@ def train_model(model, initial_epochs, criterion, optimizer, train_loader, valid
 
                     with torch.no_grad():
                         validation_loss, accuracy = validation(model, validate_loader, criterion)
-                        
+
                     print("Epoch: {}/{}... ".format(e+1, epochs),
                         "Train Loss: {:.4f}".format(running_loss/print_every),
                         "Validation Loss {:.4f}".format(validation_loss/len(validate_loader)),
                         "Validation Accuracy: {:.4f}".format(accuracy/len(validate_loader)))
-                    
+
                     # early stopping
                     early_stopping(train_loss, validation_loss)
                     if early_stopping.early_stop:
                         print("We are at epoch:", e)
                         break
-                    
+
                     running_loss = 0
                     model.train()
-        
+
 
 
 # Accuracy testing function
@@ -138,30 +138,30 @@ def check_accuracy(model, test_loader):
             probabilities = torch.exp(output)        
             equality = (labels.data == probabilities.max(dim=1)[1])      
             accuracy += equality.type(torch.FloatTensor).mean()
-        
+
         print("Test Accuracy: {}".format(accuracy/len(test_loader)))
 
 def predict(image_path, model, topk=5):
     ''' Predict the class (or classes) of an image using a trained deep learning model.
     '''
-    
+
     image = processing_functions.process_image(image_path)
     image = image.unsqueeze_(0).float()
 
     model.to(device)
-    
+
     with torch.no_grad():
         output = model.forward(image)
-    
+
     probabilities = F.softmax(output)
     result = probabilities.topk(topk)
-    
+
     top_probabilities = result[0].detach().type(torch.FloatTensor).numpy().tolist()[0]
-    
+
     top_indices = result[1].detach().type(torch.FloatTensor).numpy().tolist()[0]
     idx_to_class = {value: key for key, value in model.class_to_idx.items()}
     top_classes = [idx_to_class[index] for index in top_indices]
-    
+
     return top_probabilities, top_classes
 
 # Function for saving the model checkpoint
@@ -175,7 +175,7 @@ def save_checkpoint(model, epochs, training_dataset, dropout, learning_rate):
             'state_dict': model.state_dict(),
             'class_to_idx': model.class_to_idx},
             'checkpoint.pth')
-    
+
 # Function for loading the model checkpoint    
 def load_model(path):
     checkpoint = torch.load(path)
@@ -189,8 +189,8 @@ def load_model(path):
                                         ('fc2', nn.Linear(5000, 102)),
                                         ('output', nn.LogSoftmax(dim=1))]))
     model.classifier = classifier
-    
+
     model.class_to_idx = checkpoint['class_to_idx']
     model.load_state_dict(checkpoint['state_dict'])
-    
+
     return model

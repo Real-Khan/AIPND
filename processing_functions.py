@@ -57,7 +57,7 @@ def process_image(image):
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
     processed_image = process_image(pil_image)
-    
+
     return processed_image
 
 # Function to convert a PyTorch tensor and display it
@@ -65,21 +65,21 @@ def imshow(image, ax=None, title=None):
     """Imshow for Tensor."""
     if ax is None:
         fig, ax = plt.subplots()
-    
+
     # PyTorch tensors assume the color channel is the first dimension
     # but matplotlib assumes is the third dimension
     image = image.numpy().transpose((1, 2, 0))
-    
+
     # Undo preprocessing
     mean = np.array([0.485, 0.456, 0.406])
     std = np.array([0.229, 0.224, 0.225])
     image = std * image + mean
-    
+
     # Image needs to be clipped between 0 and 1 or it looks like noise when displayed
     image = np.clip(image, 0, 1)
-    
+
     ax.imshow(image)
-    
+
     return ax
 
 
@@ -88,8 +88,8 @@ def load_json(json_file):
     with open(json_file, 'r') as f:
         cat_to_name = json.load(f)
         return cat_to_name
-    
-    
+
+
 # Function to display an image along with the top 5 classes
 def sanity_check(img_path, name_dict, classes, probs):
 
